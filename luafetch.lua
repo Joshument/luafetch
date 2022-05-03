@@ -1,14 +1,16 @@
-function cyanify(text)
+local function cyanify(text)
     return "\27[36m"..text.."\27[39m"
 end
 
-function boldify(text)
+local function boldify(text)
     return "\27[1m"..text.."\27[22m"
 end
 
-function labelify(text)
+local function labelify(text)
     return cyanify(boldify(text))
 end
+
+local checkShell
 
 -- Get the user name and system name
 local shell = io.popen("whoami")
@@ -19,11 +21,27 @@ local input = io.input("/proc/sys/kernel/hostname")
 local hostname = io.read("*all"):sub(1, -2)
 
 -- Get the operating system name
-shell = io.popen("lsb_release -a | grep 'Description'")
-local osname = shell:read("*a"):sub(1, -2):gsub("Description:.", '')
+shell = io.popen("(ls /etc/*-release && echo yes) || echo no")
+local isDebian = shell:read("*a"):find("no")
 
-input = io.input("/etc/issue")
-local osname = io.read("*all")
+if isDebian then
+    shell = io.popen("cat /etc/*_version | grep \'Description\'")
+else
+    shell = io.popen("cat /etc/*-release | grep \'PRETTY_NAME\'")
+end
+
+local osname = shell:read("*a"):sub(1, -2)
+
+-- Removing all of the surrounding information
+if isDebian then
+    osname = osname:gsub('Description:.', ''):sub(1, -2)
+else
+    osname = osname:gsub('PRETTY_NAME=\"', ''):sub(1, -2)
+end
+
+
+--[[ input = io.input("/etc/issue")
+local osname = io.read("*all") ]]--
 -- idk wtf this black magic is but it works lol
 osname = osname:gsub("\\[%a(%c)]+", ''):gsub("%(", '')
 
@@ -81,14 +99,15 @@ local memTotal = meminfo:sub(i, -1)
 local j = select(2, memTotal:find('\n'))
 local memTotal = memTotal:sub(1, j):gsub("MemTotal:%s+", ''):gsub(" kB\n", '')
 
-local i = select(1, meminfo:find("Inactive:"))
-local inactiveMem = meminfo:sub(i, -1)
-local j = select(2, inactiveMem:find('\n'))
-local inactiveMem = inactiveMem:sub(1, j):gsub("Inactive:%s+", ''):gsub(" kB\n", '')
+shell = io.popen("free | grep Mem")
+local usedMem = shell:read("*a")
+usedMem = usedMem:gsub("[%a%p]+%s+%d+%s+%d+%s+", '')
+local i, j = usedMem:find("%d+")
+usedMem = usedMem:sub(i, j)
 
 -- Final output
-
 print(labelify(string.format("%s", username))..'@'..labelify(string.format( "%s",hostname)))
+print(boldify("--------------------"))
 print(string.format(labelify("OS:").." %s", osname))
 print(string.format(labelify("Architecture:").." %s", architecture))
 print(string.format(labelify("Host Machine:").." %s", hostMachine))
@@ -96,4 +115,4 @@ print(string.format(labelify("Kernel:").." %s", kernelVersion))
 print(string.format(labelify("CPU:").." %s x%d @ %.3fGHz", cpuName, coreCount, tonumber(cpuMHz) / 1000))
 --print(string.format(labelify("CPU:").." %s x%d", cpuName, coreCount))
 print(string.format(labelify("Shell:").." %s", defaultShell))
-print(string.format(labelify("Memory: ").."%.0f/%.0f", tonumber(inactiveMem) / 1024, tonumber(memTotal) / 1024).."MiB")
+print(string.format(labelify("Memory: ").."%.0f/%.0f", tonumber(usedMem) / 1024, tonumber(memTotal) / 1024).."MiB")
