@@ -17,7 +17,7 @@ local shell = io.popen("whoami")
 local username = shell:read("*a"):sub(1, -2)
 shell:close()
 
-local input = io.input("/proc/sys/kernel/hostname")
+io.input("/proc/sys/kernel/hostname")
 local hostname = io.read("*all"):sub(1, -2)
 
 -- Get the operating system name
@@ -45,8 +45,13 @@ shell = io.popen("uname -m")
 local architecture = shell:read("*a"):sub(1, -2)
 
 -- Get host machine
-shell = io.input("/sys/devices/virtual/dmi/id/product_name")
-local hostMachine = io.read("*a"):sub(1, -2)
+local product_name = io.open("/sys/devices/virtual/dmi/id/product_name")
+local hostMachine = "unknown";
+if product_name then
+    product_name:close()
+    io.input("/sys/devices/virtual/dmi/id/product_name")
+    hostMachine = io.read("*a"):sub(1, -2)
+end
 
 -- Get kernel version
 shell = io.popen("uname -r")
@@ -55,7 +60,7 @@ local kernelVersion = shell:read("*a"):sub(1, -2)
 -- CPU information
 local foundInfo = false
 
-input = io.input("/proc/cpuinfo")
+io.input("/proc/cpuinfo")
 local cpuInfo = io.read("*all")
 
 -- The start of the model name info
@@ -86,7 +91,7 @@ end
 local defaultShell = os.getenv("SHELL")
 
 -- Get the total amount of Memory, using the same method as getting the cpuName
-input = io.input("/proc/meminfo")
+io.input("/proc/meminfo")
 local meminfo = io.read("*all")
 local i = select(1, meminfo:find("MemTotal:"))
 local memTotal = meminfo:sub(i, -1)
