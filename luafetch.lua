@@ -1,14 +1,5 @@
-local function cyanify(text)
-    return "\27[36m"..text.."\27[39m"
-end
-
-local function boldify(text)
-    return "\27[1m"..text.."\27[22m"
-end
-
-local function labelify(text)
-    return cyanify(boldify(text))
-end
+local config = require("config")
+local Lunacolors = require("Lunacolors")
 
 local function fileToString(fileStr)
     local file = io.open(fileStr)
@@ -21,119 +12,126 @@ local function fileToString(fileStr)
     end
 end
 
-local checkShell
+-- Function calls for specific settings
+local configStrings = {}
 
--- Get the user name and system name
-local shell = io.popen("whoami")
-local username = shell:read("*a"):sub(1, -2)
-shell:close()
+configStrings["user"] = function()
+    local username = io.popen("whoami"):read("*a"):sub(1, -2)
 
-local hostname = fileToString("/proc/sys/kernel/hostname")
-if not hostname then
-    hostname = "unknown"
-end
-
--- Get the operating system name
-shell = io.popen("(ls /etc/*-release && echo yes) || echo no")
-local isDebian = shell:read("*a"):find("no")
-
-if isDebian then
-    shell = io.popen("cat /etc/*_version | grep \'Description\'")
-else
-    shell = io.popen("cat /etc/*-release | grep \'PRETTY_NAME\'")
-end
-
-local osname = shell:read("*a"):sub(1, -2)
-
--- Removing all of the surrounding information
-if isDebian then
-    osname = osname:gsub('Description:.', ''):sub(1, -2)
-else
-    osname = osname:gsub('PRETTY_NAME=\"', ''):sub(1, -2)
-end
-
--- Get CPU architecture
--- Architecture:                    x86_64
-shell = io.popen("uname -m")
-local architecture = shell:read("*a"):sub(1, -2)
-
--- Get host machine
-local hostMachine = fileToString("/sys/devices/virtual/dmi/id/product_name")
-
-if not hostMachine then
-    hostMachine = "unknown"
-end
-
--- Get kernel version
-shell = io.popen("uname -r")
-local kernelVersion = shell:read("*a"):sub(1, -2)
-
--- CPU information
-local cpuInfo = fileToString("/proc/cpuinfo")
-print(cpuInfo)
-local cpuName, cpuMHz, coreCount
-
-if cpuInfo then
-    print("yea")
-    -- The start of the model name info
-    local i = select(1, cpuInfo:find("model name"))
-
-    -- Get everything aftwards
-    cpuName = cpuInfo:sub(i, -1)
-
-    -- Look for the newline and get substring
-    local j = select(2, cpuName:find('\n'))
-    cpuName = cpuName:sub(1, j - 1):gsub("model name.: ", '')
-
-    -- Get the CPU clock speed using the same method
-    local i = select(1, cpuInfo:find("cpu MHz"))
-    cpuMHz = cpuInfo:sub(i, -1)
-    local j = select(2, cpuMHz:find('\n'))
-    -- For some stupid reason string.gsub() doesn't want to work on cpu MHz??? This is the last resort
-    cpuMHz = cpuMHz:sub(12, j - 1)
-
-    -- Get the number of occurences using cpuName
-    coreCount = select(2, cpuInfo:gsub("model name.:", ''))
-
-    if cpuName:find('@') then
-        cpuName = cpuName:gsub(" @.+", '')
+    local hostname = fileToString("/proc/sys/kernel/hostname")
+    if not hostname then
+        hostname = "unknown"
     end
-else
-    cpuName = "unknown"
-    cpuMHz = "0"
-    coreCount = 0
+
+    return Lunacolors.format(string.format("{bold}{%s}%s", config.primaryColor, username)) 
+        .. Lunacolors.format(string.format("{%s}@", config.secondaryColor))
+        .. Lunacolors.format(string.format("{bold}{%s}%s", config.primaryColor, hostname))
 end
 
--- Get the shell
-local defaultShell = os.getenv("SHELL")
+configStrings["os"] = function()
+    local isDebian = io.popen("(ls /etc/*-release && echo yes) || echo no"):read("*a"):find("no")
 
--- Get the total amount of Memory, using the same method as getting the cpuName
-local meminfo = fileToString("/proc/meminfo")
-local memTotal, usedMem
-if meminfo then
-    local i = select(1, meminfo:find("MemTotal:"))
-    memTotal = meminfo:sub(i, -1)
-    local j = select(2, memTotal:find('\n'))
-    memTotal = memTotal:sub(1, j):gsub("MemTotal:%s+", ''):gsub(" kB\n", '')
+    if isDebian then
+        -- If both checks fail, then the OS is unknown
+        local isLinux = io.popen("(ls /etc/*_version && echo yes) || echo no"):read("*a"):find("no")
 
-    shell = io.popen("free | grep Mem")
-    usedMem = shell:read("*a")
-    usedMem = usedMem:gsub("[%a%p]+%s+%d+%s+%d+%s+", '')
-    local i, j = usedMem:find("%d+")
-    usedMem = usedMem:sub(i, j)
-else
-    memTotal = 0
-    usedMem = 0
+        if not isLinux then
+            return "unknown"
+        end
+
+        return io.popen("cat /etc/*_version | grep \'Description\'")
+            :read("*a"):sub(1, -2)
+            :gsub('Description:.', '')
+            :sub(1, -2)
+    else
+        -- -3 gets rid of newline and trailing quotation mark
+        return io.popen("cat /etc/*-release | grep \'PRETTY_NAME\'")
+            :read("*a")
+            :gsub('PRETTY_NAME=\"', '')
+            :sub(1, -3)
+    end
 end
 
--- Final output
-print(labelify(string.format("%s", username))..'@'..labelify(string.format( "%s",hostname)))
-print(boldify("--------------------"))
-print(string.format(labelify("OS:").." %s", osname))
-print(string.format(labelify("Architecture:").." %s", architecture))
-print(string.format(labelify("Host Machine:").." %s", hostMachine))
-print(string.format(labelify("Kernel:").." %s", kernelVersion))
-print(string.format(labelify("CPU:").." %s x%d @ %.3fGHz", cpuName, coreCount, tonumber(cpuMHz) / 1000))
---print(string.format(labelify("CPU:").." %s x%d", cpuName, coreCount))
-print(string.format(labelify("Shell:").." %s", defaultShell))
-print(string.format(labelify("Memory: ").."%.0f/%.0f", tonumber(usedMem) / 1024, tonumber(memTotal) / 1024).."MiB")
+configStrings["architecture"] = function()
+    return io.popen("uname -m"):read("*a"):sub(1, -2)
+end
+
+configStrings["host"] = function()
+    return fileToString("/sys/devices/virtual/dmi/id/product_name")
+end
+
+configStrings["kernel"] = function()
+    return io.popen("uname -r"):read("*a"):sub(1, -2)
+end
+
+configStrings["cpu"] = function()
+    local cpuInfo = fileToString("/proc/cpuinfo")
+    local cpuName, cpuMHz, coreCount
+    
+    if cpuInfo then
+        -- get the CPU name
+
+        cpuName = cpuInfo:sub(select(1, cpuInfo:find("model name")), -1)
+        cpuName = cpuName:sub(1, select(2, cpuName:find('\n')) - 1)
+            :gsub("model name.+: ", '')
+    
+        -- Get the CPU clock speed using the same method
+        cpuMHz = cpuInfo:sub(select(1, cpuInfo:find("cpu MHz")), -1)
+        -- For some stupid reason string.gsub() doesn't want to work on cpu MHz??? This is the last resort
+        cpuMHz = cpuMHz:sub(12, select(2, cpuMHz:find('\n')))
+    
+        -- Get the number of occurences using cpuName
+        coreCount = select(2, cpuInfo:gsub("model name.:", ''))
+    
+        if cpuName:find('@') then
+            cpuName = cpuName:gsub(" @.+", '')
+        end
+    else
+        cpuName = "unknown"
+        cpuMHz = "0"
+        coreCount = 0
+    end
+
+    return string.format("%s x%d @ %.3fGHz", cpuName, coreCount, tonumber(cpuMHz) / 1000)
+end
+
+configStrings["shell"] = function()
+    return os.getenv("SHELL")
+end
+
+configStrings["memory"] = function()
+    local meminfo = fileToString("/proc/meminfo")
+    local memTotal, usedMem
+    if meminfo then
+        memTotal = meminfo:sub(select(1, meminfo:find("MemTotal:")), -1)
+        memTotal = memTotal:sub(1, select(2, memTotal:find('\n')))
+            :gsub("MemTotal:%s+", '')
+            :gsub(" kB\n", '')
+
+        usedMem = io.popen("free | grep Mem"):read("*a"):gsub("[%a%p]+%s+%d+%s+%d+%s+", '')
+        local i, j = usedMem:find("%d+")
+        usedMem = usedMem:sub(i, j)
+    else
+        memTotal = 0
+        usedMem = 0
+    end
+
+    return string.format("%.0f/%.0fMiB", tonumber(usedMem) / 1024, tonumber(memTotal) / 1024)
+end
+
+configStrings["lua"] = function()
+    return _VERSION
+end
+
+for _, item in ipairs(config.order) do
+    if(configStrings[item]) then
+        if config.showRaw[item] then
+            print(configStrings[item]())
+        else
+            print(Lunacolors.format(string.format("{bold}{%s}%s%s", config.primaryColor, config.prettyOrder[item], config.seperator)) 
+                .. Lunacolors.format(string.format("{%s}%s", config.secondaryColor, configStrings[item]())))
+        end
+    else
+        print(Lunacolors.format(item))
+    end
+end
