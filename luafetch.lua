@@ -39,12 +39,6 @@ else
     osname = osname:gsub('PRETTY_NAME=\"', ''):sub(1, -2)
 end
 
-
---[[ input = io.input("/etc/issue")
-local osname = io.read("*all") ]]--
--- idk wtf this black magic is but it works lol
-osname = osname:gsub("\\[%a(%c)]+", ''):gsub("%(", '')
-
 -- Get CPU architecture
 -- Architecture:                    x86_64
 shell = io.popen("uname -m")
