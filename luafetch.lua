@@ -10,6 +10,17 @@ local function labelify(text)
     return cyanify(boldify(text))
 end
 
+local function fileToString(fileStr)
+    local file = io.open(fileStr)
+    if file then
+        file:close()
+        io.input(fileStr)
+        return io.read("*a"):sub(1, -2)
+    else
+        return nil
+    end
+end
+
 local checkShell
 
 -- Get the user name and system name
@@ -17,8 +28,10 @@ local shell = io.popen("whoami")
 local username = shell:read("*a"):sub(1, -2)
 shell:close()
 
-io.input("/proc/sys/kernel/hostname")
-local hostname = io.read("*all"):sub(1, -2)
+local hostname = fileToString("/proc/sys/kernel/hostname")
+if not hostname then
+    hostname = "unknown"
+end
 
 -- Get the operating system name
 shell = io.popen("(ls /etc/*-release && echo yes) || echo no")
@@ -45,12 +58,10 @@ shell = io.popen("uname -m")
 local architecture = shell:read("*a"):sub(1, -2)
 
 -- Get host machine
-local product_name = io.open("/sys/devices/virtual/dmi/id/product_name")
-local hostMachine = "unknown";
-if product_name then
-    product_name:close()
-    io.input("/sys/devices/virtual/dmi/id/product_name")
-    hostMachine = io.read("*a"):sub(1, -2)
+local hostMachine = fileToString("/sys/devices/virtual/dmi/id/product_name")
+
+if not hostMachine then
+    hostMachine = "unknown"
 end
 
 -- Get kernel version
@@ -58,51 +69,62 @@ shell = io.popen("uname -r")
 local kernelVersion = shell:read("*a"):sub(1, -2)
 
 -- CPU information
-local foundInfo = false
+local cpuInfo = fileToString("/proc/cpuinfo")
+print(cpuInfo)
+local cpuName, cpuMHz, coreCount
 
-io.input("/proc/cpuinfo")
-local cpuInfo = io.read("*all")
+if cpuInfo then
+    print("yea")
+    -- The start of the model name info
+    local i = select(1, cpuInfo:find("model name"))
 
--- The start of the model name info
-local i = select(1, cpuInfo:find("model name"))
+    -- Get everything aftwards
+    cpuName = cpuInfo:sub(i, -1)
 
--- Get everything aftwards
-local cpuName = cpuInfo:sub(i, -1)
+    -- Look for the newline and get substring
+    local j = select(2, cpuName:find('\n'))
+    cpuName = cpuName:sub(1, j - 1):gsub("model name.: ", '')
 
--- Look for the newline and get substring
-local j = select(2, cpuName:find('\n'))
-cpuName = cpuName:sub(1, j - 1):gsub("model name.: ", '')
+    -- Get the CPU clock speed using the same method
+    local i = select(1, cpuInfo:find("cpu MHz"))
+    cpuMHz = cpuInfo:sub(i, -1)
+    local j = select(2, cpuMHz:find('\n'))
+    -- For some stupid reason string.gsub() doesn't want to work on cpu MHz??? This is the last resort
+    cpuMHz = cpuMHz:sub(12, j - 1)
 
--- Get the CPU clock speed using the same method
-local i = select(1, cpuInfo:find("cpu MHz"))
-local cpuMHz = cpuInfo:sub(i, -1)
-local j = select(2, cpuMHz:find('\n'))
--- For some stupid reason string.gsub() doesn't want to work on cpu MHz??? This is the last resort
-cpuMHz = cpuMHz:sub(12, j - 1)
+    -- Get the number of occurences using cpuName
+    coreCount = select(2, cpuInfo:gsub("model name.:", ''))
 
--- Get the number of occurences using cpuName
-local coreCount = select(2, cpuInfo:gsub("model name.:", ''))
-
-if cpuName:find('@') then
-    cpuName = cpuName:gsub(" @.+", '')
+    if cpuName:find('@') then
+        cpuName = cpuName:gsub(" @.+", '')
+    end
+else
+    cpuName = "unknown"
+    cpuMHz = "0"
+    coreCount = 0
 end
 
 -- Get the shell
 local defaultShell = os.getenv("SHELL")
 
 -- Get the total amount of Memory, using the same method as getting the cpuName
-io.input("/proc/meminfo")
-local meminfo = io.read("*all")
-local i = select(1, meminfo:find("MemTotal:"))
-local memTotal = meminfo:sub(i, -1)
-local j = select(2, memTotal:find('\n'))
-local memTotal = memTotal:sub(1, j):gsub("MemTotal:%s+", ''):gsub(" kB\n", '')
+local meminfo = fileToString("/proc/meminfo")
+local memTotal, usedMem
+if meminfo then
+    local i = select(1, meminfo:find("MemTotal:"))
+    memTotal = meminfo:sub(i, -1)
+    local j = select(2, memTotal:find('\n'))
+    memTotal = memTotal:sub(1, j):gsub("MemTotal:%s+", ''):gsub(" kB\n", '')
 
-shell = io.popen("free | grep Mem")
-local usedMem = shell:read("*a")
-usedMem = usedMem:gsub("[%a%p]+%s+%d+%s+%d+%s+", '')
-local i, j = usedMem:find("%d+")
-usedMem = usedMem:sub(i, j)
+    shell = io.popen("free | grep Mem")
+    usedMem = shell:read("*a")
+    usedMem = usedMem:gsub("[%a%p]+%s+%d+%s+%d+%s+", '')
+    local i, j = usedMem:find("%d+")
+    usedMem = usedMem:sub(i, j)
+else
+    memTotal = 0
+    usedMem = 0
+end
 
 -- Final output
 print(labelify(string.format("%s", username))..'@'..labelify(string.format( "%s",hostname)))
