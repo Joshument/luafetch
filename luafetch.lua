@@ -77,7 +77,12 @@ configStrings["cpu"] = function()
         -- get the CPU name
 
         if not cpuInfo:find("model name") then
-            return "unknown"
+            if io.popen("uname -m"):read("*a"):sub(1, -2) == "aarch64" then
+                coreCount = select(2, cpuInfo:gsub("processor", ''))
+                return string.format("unknown x%d", coreCount)
+            else
+                return "unknown"
+            end
         end
 
         cpuName = cpuInfo:sub(select(1, cpuInfo:find("model name")), -1)
