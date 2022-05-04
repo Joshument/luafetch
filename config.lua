@@ -8,7 +8,7 @@ config.secondaryColor = "white"
 --[[ 
     The order of the labels to display
 
-    Supported labels: user, os, architecture, host, kernel, cpu, gpu, shell, memory, lua
+    Supported labels: user, os, architecture, host, kernel, terminal, cpu, gpu, shell, memory, lua
     Other labels will be displayed raw
     For raw labels, you may use the Lunacolours formatting. Check https://github.com/Rosettea/Lunacolors/blob/master/init.lua for list of options.
 ]]--
