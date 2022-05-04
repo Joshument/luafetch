@@ -105,7 +105,7 @@ configStrings["gpu"] = function()
 end
 
 configStrings["shell"] = function()
-    return os.getenv("SHELL")
+    return os.getenv("SHELL"):gsub(".*/", '')
 end
 
 configStrings["memory"] = function()
