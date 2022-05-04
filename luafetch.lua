@@ -117,7 +117,7 @@ configStrings["memory"] = function()
             :gsub("MemTotal:%s+", '')
             :gsub(" kB\n", '')
 
-        usedMem = io.popen("free | grep Mem"):read("*a"):gsub("[%a%p]+%s+%d+%s+%d+%s+", '')
+        usedMem = io.popen("free | grep Mem"):read("*a"):gsub("[%a%p]+%s+%d+%s+", '')
         local i, j = usedMem:find("%d+")
         usedMem = usedMem:sub(i, j)
     else
