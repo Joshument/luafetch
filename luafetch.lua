@@ -64,6 +64,11 @@ configStrings["kernel"] = function()
     return io.popen("uname -r"):read("*a"):sub(1, -2)
 end
 
+configStrings["terminal"] = function()
+    -- the gsub is to remove any prefix in the file
+    return os.getenv("TERM"):gsub("^.*-", '')
+end
+
 configStrings["cpu"] = function()
     local cpuInfo = fileToString("/proc/cpuinfo")
     local cpuName, cpuMHz, coreCount
