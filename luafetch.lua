@@ -76,6 +76,10 @@ configStrings["cpu"] = function()
     if cpuInfo then
         -- get the CPU name
 
+        if not cpuInfo:find("model name") then
+            return "unknown"
+        end
+
         cpuName = cpuInfo:sub(select(1, cpuInfo:find("model name")), -1)
         cpuName = cpuName:sub(1, select(2, cpuName:find('\n')) - 1)
             :gsub("model name.+: ", '')
