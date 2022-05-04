@@ -95,6 +95,10 @@ configStrings["cpu"] = function()
     return string.format("%s x%d @ %.3fGHz", cpuName, coreCount, tonumber(cpuMHz) / 1000)
 end
 
+configStrings["gpu"] = function()
+    return io.popen("glxinfo | grep -i 'OpenGL renderer string:'"):read("*a"):gsub("OpenGL renderer string: ", ''):sub(1, -2)
+end
+
 configStrings["shell"] = function()
     return os.getenv("SHELL")
 end
@@ -128,7 +132,7 @@ for _, item in ipairs(config.order) do
         if config.showRaw[item] then
             print(configStrings[item]())
         else
-            print(Lunacolors.format(string.format("{bold}{%s}%s%s", config.primaryColor, config.prettyOrder[item], config.seperator)) 
+            print(Lunacolors.format(string.format("{bold}{%s}%s%s", config.primaryColor, config.prettyOrder[item] or item, config.seperator)) 
                 .. Lunacolors.format(string.format("{%s}%s", config.secondaryColor, configStrings[item]())))
         end
     else

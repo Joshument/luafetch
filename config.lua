@@ -20,6 +20,7 @@ config.order = {
     "host",
     "kernel",
     "cpu",
+    "gpu",
     "shell",
     "memory",
     "lua"
@@ -38,6 +39,7 @@ config.prettyOrder = {
     ["host"] = "Host",
     ["kernel"] = "Kernel",
     ["cpu"] = "CPU",
+    ["gpu"] = "GPU",
     ["shell"] = "Shell",
     ["memory"] = "Memory",
     ["lua"] = "Lua Version",
