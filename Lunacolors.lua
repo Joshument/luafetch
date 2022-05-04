@@ -1,14 +1,14 @@
 Lunacolors = {}
 
-function init(name, codes)
+local function ansi(open, close, text)
+	if text == nil then return '\27[' .. open .. 'm' end
+	return '\27[' .. open .. 'm' .. text .. '\27[' .. close .. 'm'
+end
+
+local function init(name, codes)
 	Lunacolors[name] = function(text)
 		return ansi(codes[1], codes[2], text)
 	end
-end
-
-function ansi(open, close, text)
-	if text == nil then return '\27[' .. open .. 'm' end
-	return '\27[' .. open .. 'm' .. text .. '\27[' .. close .. 'm'
 end
 
 -- Define colors

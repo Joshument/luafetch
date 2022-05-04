@@ -47,6 +47,7 @@ config.prettyOrder = {
 
 
 -- Seperator between the label and the value of an item
+-- If you want, you can also use Lunacolor colour codes on this
 config.seperator = ": "
 
 return config
