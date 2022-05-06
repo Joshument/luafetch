@@ -3,7 +3,7 @@ local config = {}
 -- The colour of the labels
 config.primaryColor = "cyan"
 -- The color of the information
-config.secondaryColor = "white"
+config.secondaryColor = "reset"
 
 --[[ 
     The order of the labels to display
@@ -34,17 +34,17 @@ config.showRaw = {
 
 -- Use this table if you wish to change the way that a certain value is displayed
 config.prettyOrder = {
-    ["user"] = "User",
-    ["os"] = "OS",
-    ["architecture"] = "Architecture",
-    ["host"] = "Host",
-    ["kernel"] = "Kernel",
-    ["terminal"] = "Terminal",
-    ["cpu"] = "CPU",
-    ["gpu"] = "GPU",
-    ["shell"] = "Shell",
-    ["memory"] = "Memory",
-    ["lua"] = "Lua Version",
+    ["user"]            = "User",
+    ["os"]              = "OS",
+    ["architecture"]    = "Architecture",
+    ["host"]            = "Host",
+    ["kernel"]          = "Kernel",
+    ["terminal"]        = "Terminal",
+    ["cpu"]             = "CPU",
+    ["gpu"]             = "GPU",
+    ["shell"]           = "Shell",
+    ["memory"]          = "Memory",
+    ["lua"]             = "Lua Version",
 }
 
 

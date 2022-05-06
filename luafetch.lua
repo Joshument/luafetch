@@ -12,6 +12,16 @@ local function fileToString(fileStr)
     end
 end
 
+local function fileExists(path)
+    local file = io.open(path, "r")
+    if file ~= nil then
+        io.close(file)
+        return true
+    else
+        return false
+    end
+end
+
 -- Function calls for specific settings
 local configStrings = {}
 
@@ -57,7 +67,15 @@ configStrings["architecture"] = function()
 end
 
 configStrings["host"] = function()
-    return fileToString("/sys/devices/virtual/dmi/id/product_name")
+    -- Detection on x86 machines
+    if fileExists("/sys/devices/virtual/dmi/id/product_name") then
+        return fileToString("/sys/devices/virtual/dmi/id/product_name")
+    -- Detection on Devices that use a Device Tree
+    elseif fileExists("/sys/firmware/devicetree/base/model") then
+        return fileToString("/sys/firmware/devicetree/base/model")
+    else
+        return "Unknown"
+    end
 end
 
 configStrings["kernel"] = function()
@@ -75,6 +93,15 @@ configStrings["cpu"] = function()
     
     if cpuInfo then
         -- get the CPU name
+
+        if not cpuInfo:find("model name") then
+            if io.popen("uname -m"):read("*a"):sub(1, -2) == "aarch64" then
+                coreCount = select(2, cpuInfo:gsub("processor", ''))
+                return string.format("unknown x%d", coreCount)
+            else
+                return "unknown"
+            end
+        end
 
         cpuName = cpuInfo:sub(select(1, cpuInfo:find("model name")), -1)
         cpuName = cpuName:sub(1, select(2, cpuName:find('\n')) - 1)
@@ -105,7 +132,7 @@ configStrings["gpu"] = function()
 end
 
 configStrings["shell"] = function()
-    return os.getenv("SHELL")
+    return os.getenv("SHELL"):gsub(".*/", '')
 end
 
 configStrings["memory"] = function()
