@@ -12,6 +12,16 @@ local function fileToString(fileStr)
     end
 end
 
+local function fileExists(path)
+    local file = io.open(path, "r")
+    if file ~= nil then
+        io.close(file)
+        return true
+    else
+        return false
+    end
+end
+
 -- Function calls for specific settings
 local configStrings = {}
 
@@ -57,7 +67,15 @@ configStrings["architecture"] = function()
 end
 
 configStrings["host"] = function()
-    return fileToString("/sys/devices/virtual/dmi/id/product_name")
+    -- Detection on x86 machines
+    if fileExists("/sys/devices/virtual/dmi/id/product_name") then
+        return fileToString("/sys/devices/virtual/dmi/id/product_name")
+    -- Detection on Devices that use a Device Tree
+    elseif fileExists("/sys/firmware/devicetree/base/model") then
+        return fileToString("/sys/firmware/devicetree/base/model")
+    else
+        return "Unknown"
+    end
 end
 
 configStrings["kernel"] = function()
