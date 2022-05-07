@@ -1,5 +1,5 @@
 local config = require("config")
-local Lunacolors = require("Lunacolors")
+local Lunacolors = require("Lunacolors/init")
 
 local function fileToString(fileStr)
     local file = io.open(fileStr)
