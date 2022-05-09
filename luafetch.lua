@@ -101,7 +101,7 @@ configStrings["cpu"] = function()
             else if io.popen("uname -m"):read("*a"):sub(1, -2) == "sh4a" then
                 cpuName = cpuInfo:sub(select(1, cpuInfo:find("cpu type")), -1)
                 cpuName = cpuName:sub(1, select(2, cpuName:find('\n')) - 1)
-                    :gsub("model name.+: ", '')
+                    :gsub("cpu type.+: ", '')
                 coreCount = io.popen("nproc"):read("*a"):gsub('\n', '')
 
                 return string.format("%s x%s", cpuName, coreCount)
